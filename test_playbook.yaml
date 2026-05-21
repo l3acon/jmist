@@ -41,11 +41,11 @@
 #        msg: "{{ create_result }}"
 #
 
-    ## probably want to impliment this funcationlaity via survey, with a daily update?
+    ## probably want to impliment the below via module with lookup plugins 
     #- name: Update the specific WXTag label values
-    #  update_ap_label:
-    #    label: "{{ l3acon.find_label_by_name('this-matt-tag') }}"
-    #    wxtag: "{{ l3acon.find_tag_by_name('') }}"
+    #  l3acon.jmist.update_ap_label:
+    #    label: "{{ l3acon.jmist.lookup_label_id_by_name('this-matt-tag') }}"
+    #    wxtag: "{{ l3acon.jmist.lookup__ap_by_mac('a8:53:7d:89:7e:7d') }}"
 
     - name: Update the specific WXTag label values
       ansible.builtin.uri:

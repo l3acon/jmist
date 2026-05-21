@@ -1,0 +1,43 @@
+---
+- name: Test WxTag management with lookup plugins
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    org_id: "{{ lookup('ansible.builtin.env', 'ORG_ID') }}"
+    mist_token: "{{ lookup('ansible.builtin.env', 'MIST_TOKEN') }}"
+    mist_base_url: "{{ lookup('ansible.builtin.env', 'MIST_BASE_URL') | default('https://api.mist.com', true) }}"
+    ap_mac: "a8:53:7d:89:7e:7d"
+    tag_name: "this-matt-tag"
+
+  tasks:
+    - name: Convert AP MAC to device ID
+      ansible.builtin.set_fact:
+        ap_id: "{{ lookup('l3acon.jmist.lookup_ap_by_mac', ap_mac) }}"
+
+    - name: Show AP ID from MAC lookup
+      ansible.builtin.debug:
+        msg: "AP MAC {{ ap_mac }} -> ID {{ ap_id }}"
+
+    - name: Look up WxTag ID by name
+      ansible.builtin.set_fact:
+        tag_id: "{{ lookup('l3acon.jmist.lookup_label_id_by_name', tag_name, org_id=org_id, api_token=mist_token, base_url=mist_base_url) }}"
+
+    - name: Show tag ID from name lookup
+      ansible.builtin.debug:
+        msg: "Tag '{{ tag_name }}' -> ID {{ tag_id }}"
+
+    - name: Update WxTag with AP device ID
+      l3acon.jmist.mist_org_wxtags:
+        api_token: "{{ mist_token }}"
+        base_url: "{{ mist_base_url }}"
+        org_id: "{{ org_id }}"
+        wxtag_id: "{{ tag_id }}"
+        state: present
+        values:
+          - "{{ ap_id }}"
+      register: update_result
+
+    - name: Show update result
+      ansible.builtin.debug:
+        var: update_result
