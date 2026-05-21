@@ -4,4 +4,4 @@ __pycache__/
 *.pyc
 *.tar.gz
 tools/output/
-*.tar.gz
+specs/
