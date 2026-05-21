@@ -1,0 +1,6 @@
+ansible-core>=2.15
+pyyaml>=6.0
+black>=22.3.0
+autoflake
+jsonschema
+jinja2>=3.0

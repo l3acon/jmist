@@ -1,0 +1,6 @@
+---
+collection:
+  path: ./build/collections/ansible_collections/l3acon/jmist
+  namespace: l3acon
+  name: jmist
+plugins: []

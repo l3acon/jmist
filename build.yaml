@@ -1,0 +1,5 @@
+---
+- hosts: localhost
+  gather_facts: yes
+  roles:
+    - ansible.content_builder.run

@@ -1,0 +1,68 @@
+---
+- name: Test Juniper Mist collection modules
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    org_id: "{{ lookup('ansible.builtin.env', 'ORG_ID') }}"
+    mist_token: "{{ lookup('ansible.builtin.env', 'MIST_TOKEN') }}"
+    tag_id: "b663ff9e-869c-4f7f-8429-0a0198f30427"
+    mist_base_url: "https://api.gc4.mist.com"
+
+  tasks:
+    - name: Show create result
+      debug:
+        msg: "{{ mist_token }}"
+
+    - name: Gather sites
+      l3acon.jmist.mist_org_sites:
+        api_token: "{{ mist_token }}"
+        org_id: "{{ org_id }}"
+        base_url: "{{ mist_base_url }}"
+        state: gathered
+      register: sites_result
+
+    - name: Show create result
+      debug:
+        msg: "{{ sites_result }}"
+
+#    - name: Create a site (check mode)
+#      l3acon.jmist.mist_org_sites:
+#        api_token: "{{ mist_token }}"
+#        base_url: "{{ mist_base_url }}"
+#        org_id: "{{ org_id }}"
+#        state: present
+#        name: "Test Site"
+#        timezone: "America/Denver"
+#      register: create_result
+#
+#    - name: Show create result
+#      debug:
+#        msg: "{{ create_result }}"
+#
+
+    ## probably want to impliment this funcationlaity via survey, with a daily update?
+    #- name: Update the specific WXTag label values
+    #  update_ap_label:
+    #    label: "{{ l3acon.find_label_by_name('this-matt-tag') }}"
+    #    wxtag: "{{ l3acon.find_tag_by_name('') }}"
+
+    - name: Update the specific WXTag label values
+      ansible.builtin.uri:
+        url: "{{ mist_base_url }}/api/v1/orgs/{{ org_id }}/wxtags/{{ tag_id }}"
+        method: PUT
+        headers:
+          Authorization: "Token {{ mist_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          values:
+            - "00000000-0000-0000-1000-a8537d897e7d" # access point ID
+        status_code:
+          - 200
+          - 201
+      register: mist_response
+
+    - name: Debug the API response
+      ansible.builtin.debug:
+        var: mist_response.json

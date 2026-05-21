@@ -1,0 +1,5 @@
+---
+collections:
+  - name: ansible.content_builder
+    source: https://github.com/ansible-community/ansible.content_builder.git
+    type: git

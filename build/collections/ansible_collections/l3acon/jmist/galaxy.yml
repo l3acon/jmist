@@ -1,0 +1,24 @@
+---
+namespace: l3acon
+name: jmist
+version: 1.0.0
+readme: README.md
+authors:
+  - Juniper Mist Ansible Collection Contributors
+description: Ansible collection for managing Juniper Mist cloud infrastructure via REST API
+license:
+  - GPL-3.0-or-later
+license_file: ''
+tags:
+  - juniper
+  - mist
+  - networking
+  - cloud
+  - wireless
+  - wlan
+dependencies: {}
+repository: https://github.com/l3acon/jmist
+documentation: https://github.com/l3acon/jmist
+homepage: https://www.juniper.net/us/en/products/mist-ai.html
+issues: https://github.com/l3acon/jmist/issues
+build_ignore: []
