@@ -83,8 +83,18 @@ options:
         - "List of values for the tag. Content depends on the type and match fields."
         - "For match=ap_id, this is a list of AP IDs."
         - "For match=client_mac, this is a list of client MAC addresses."
+        - "By default, values are merged with existing values (see values_mode)."
       type: list
       elements: str
+    values_mode:
+      description:
+        - "How to handle the values list when updating an existing tag."
+        - "merge (default): Add the provided values to the existing list (deduplicated)."
+        - "replace: Replace the entire values list with the provided values."
+        - "remove: Remove the provided values from the existing list."
+      type: str
+      choices: ["merge", "replace", "remove"]
+      default: "merge"
     mac:
       description:
         - "Client MAC address when type is 'client'."
@@ -116,7 +126,7 @@ EXAMPLES = """
     values:
       - "00000000-0000-0000-1000-a8537d897e7d"
 
-- name: Update values of an existing WxTag
+- name: Add APs to an existing WxTag (merge is the default)
   l3acon.jmist.mist_org_wxtags:
     api_token: "{{ mist_token }}"
     org_id: "{{ org_id }}"
@@ -124,6 +134,27 @@ EXAMPLES = """
     state: present
     values:
       - "00000000-0000-0000-1000-a8537d897e7d"
+      - "00000000-0000-0000-1000-aabbccddeeff"
+
+- name: Replace all values on a WxTag (overwrite existing)
+  l3acon.jmist.mist_org_wxtags:
+    api_token: "{{ mist_token }}"
+    org_id: "{{ org_id }}"
+    wxtag_id: "{{ tag_id }}"
+    state: present
+    values_mode: replace
+    values:
+      - "00000000-0000-0000-1000-a8537d897e7d"
+
+- name: Remove specific APs from a WxTag
+  l3acon.jmist.mist_org_wxtags:
+    api_token: "{{ mist_token }}"
+    org_id: "{{ org_id }}"
+    wxtag_id: "{{ tag_id }}"
+    state: present
+    values_mode: remove
+    values:
+      - "00000000-0000-0000-1000-aabbccddeeff"
 
 - name: Delete a WxTag
   l3acon.jmist.mist_org_wxtags:
@@ -189,6 +220,7 @@ def main():
         match=dict(type='str', choices=['ap_id', 'app', 'asset_mac', 'client_mac', 'hostname', 'ip_range_subnet', 'port', 'psk_name', 'psk_role', 'radius_attr', 'radius_class', 'radius_group', 'radius_username', 'sdkclient_uuid', 'wlan_id']),
         op=dict(type='str', choices=['in', 'not_in'], default='in'),
         values=dict(type='list', elements='str'),
+        values_mode=dict(type='str', choices=['merge', 'replace', 'remove'], default='merge'),
         mac=dict(type='str'),
         subnet=dict(type='str'),
         vlan_id=dict(type='str'),
@@ -211,6 +243,9 @@ def main():
 
     result = dict(changed=False)
 
+    values_mode = module.params.get('values_mode', 'merge')
+    new_values = module.params.get('values')
+
     if state == 'gathered':
         if module.check_mode:
             result['gathered'] = []
@@ -220,6 +255,25 @@ def main():
     elif state == 'present':
         payload = build_payload(module)
         if resource_id:
+            # For updates, handle values merge/replace/remove
+            if new_values is not None and values_mode != 'replace':
+                current = client.get(
+                    '/api/v1/orgs/{org_id}/wxtags/{wxtag_id}'.format(org_id=org_id, wxtag_id=resource_id),
+                )
+                existing_values = current.get('values', []) or []
+
+                if values_mode == 'merge':
+                    merged = list(dict.fromkeys(existing_values + new_values))
+                    payload['values'] = merged
+                elif values_mode == 'remove':
+                    payload['values'] = [v for v in existing_values if v not in new_values]
+
+                if payload.get('values') == existing_values:
+                    result['changed'] = False
+                    result['response'] = current
+                    module.exit_json(**result)
+                    return
+
             if not module.check_mode:
                 response = client.put(
                     '/api/v1/orgs/{org_id}/wxtags/{wxtag_id}'.format(org_id=org_id, wxtag_id=resource_id),
