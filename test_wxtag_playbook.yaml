@@ -7,13 +7,14 @@
     org_id: "{{ lookup('ansible.builtin.env', 'ORG_ID') }}"
     mist_token: "{{ lookup('ansible.builtin.env', 'MIST_TOKEN') }}"
     mist_base_url: "{{ lookup('ansible.builtin.env', 'MIST_BASE_URL') | default('https://api.mist.com', true) }}"
-    ap_mac: "a8:53:7d:89:7e:7d"
+    #ap_mac: "a8:53:7d:89:7e:7d"
+    ap_mac: "d4:dc:09:2a:7b:4d"
     tag_name: "this-matt-tag"
 
   tasks:
     - name: Convert AP MAC to device ID
       ansible.builtin.set_fact:
-        ap_id: "{{ lookup('l3acon.jmist.lookup_ap_by_mac', ap_mac) }}"
+        ap_id: "{{ lookup('l3acon.jmist.lookup_ap_by_mac', org_id=org_id, api_token=mist_token, ase_url=mist_base_url, validate=true, ap_mac) }}"
 
     - name: Show AP ID from MAC lookup
       ansible.builtin.debug:

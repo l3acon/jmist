@@ -112,6 +112,7 @@ def mac_to_ap_id(mac):
         raise AnsibleError(f"Invalid MAC address: '{mac}' (contains non-hex characters)")
     return f"00000000-0000-0000-1000-{clean_mac}"
 
+    # let's make sure to add device type (for places that have lots of switches)
 
 class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):
@@ -133,7 +134,8 @@ class LookupModule(LookupBase):
                     raise AnsibleError("api_token is required when validate=true")
 
                 from ansible.module_utils.urls import open_url
-                url = f"{base_url}/api/v1/orgs/{org_id}/devices"
+                clean_mac = re.sub(r'[:\-.]', '', term).lower()
+                url = f"{base_url}/api/v1/orgs/{org_id}/inventory?mac={clean_mac}"
                 headers = {
                     "Authorization": f"Token {api_token}",
                     "Content-Type": "application/json",
@@ -143,9 +145,9 @@ class LookupModule(LookupBase):
                     response = open_url(url, method="GET", headers=headers)
                     devices = json.loads(response.read())
                 except Exception as e:
-                    raise AnsibleError(f"Failed to fetch devices from Mist API: {str(e)}")
+                    raise AnsibleError(f"Failed to fetch inventory from Mist API: {str(e)}")
 
-                found = any(d.get('id') == ap_id or d.get('mac') == term.lower().replace(':', '')
+                found = any(d.get('id') == ap_id or d.get('mac') == clean_mac
                            for d in devices)
                 if not found:
                     display.warning(f"AP with MAC '{term}' (ID: {ap_id}) not found in org {org_id}")

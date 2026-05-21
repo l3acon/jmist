@@ -94,7 +94,7 @@ collections_path=./build/collections
   tasks:
     - name: Look up AP ID from MAC address
       ansible.builtin.set_fact:
-        ap_id: "{{ lookup('l3acon.jmist.lookup_ap_by_mac', 'a8:53:7d:89:7e:7d') }}"
+        ap_id: "{{ lookup('l3acon.jmist.lookup_ap_by_mac', 'aa:bb:cc:dd:ee:00') }}"
 
     - name: Look up tag ID by name
       ansible.builtin.set_fact:
@@ -129,7 +129,7 @@ When updating WxTag values, the module defaults to **merge** behavior to prevent
     state: present
     values_mode: replace
     values:
-      - "00000000-0000-0000-1000-a8537d897e7d"
+      - "00000000-0000-0000-0000-000000000000"
 
 - name: Remove a specific AP from a tag
   l3acon.jmist.mist_org_wxtags:
