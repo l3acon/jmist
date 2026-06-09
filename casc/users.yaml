@@ -11,3 +11,6 @@ controller_role_user_assignments:
   - user: mist-operator
     role_definition: JobTemplate Execute
     job_template: "Mist - Assign AP to WxTag"
+  - user: mist-operator
+    role_definition: JobTemplate Execute
+    job_template: "Mist - Remove AP from WxTag"

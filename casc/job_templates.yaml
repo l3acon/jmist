@@ -20,8 +20,42 @@ controller_templates:
           variable: ap_mac
           default: ""
         - question_name: Tag Name
-          question_description: "Name of the WxTag label to assign the AP to"
+          question_description: "WxTag label to assign the AP to"
+          required: true
+          type: multiplechoice
+          variable: tag_name
+          choices:
+            - matt-label1
+            - matt-label2
+            - another-example-label
+          default: ""
+
+  - name: "Mist - Remove AP from WxTag"
+    description: Remove an access point from a WxTag label by AP MAC address and tag name
+    organization: Default
+    project: Juniper Mist Collection
+    playbook: playbooks/mist_wxtag_remove_ap.yaml
+    inventory: Localhost
+    credentials:
+      - Mist API - Lab
+    survey_enabled: true
+    survey_spec:
+      name: ""
+      description: ""
+      spec:
+        - question_name: AP MAC Address
+          question_description: "MAC address of the AP to remove (e.g. a8:53:7d:89:7e:7d)"
           required: true
           type: text
+          variable: ap_mac
+          default: ""
+        - question_name: Tag Name
+          question_description: "WxTag label to remove the AP from"
+          required: true
+          type: multiplechoice
           variable: tag_name
+          choices:
+            - matt-label1
+            - matt-label2
+            - another-example-label
           default: ""

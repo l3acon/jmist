@@ -805,7 +805,7 @@ def main():
 
     client = MistApiClient(module)
     state = module.params['state']
-    site_id = module.params['site_id']
+    site_id = module.params['site_id'].strip()
     resource_id = module.params.get('wlan_id')
 
     result = dict(changed=False)

@@ -130,8 +130,8 @@ def main():
     )
 
     client = MistApiClient(module)
-    org_id = module.params['org_id']
-    name = module.params['name']
+    org_id = module.params['org_id'].strip()
+    name = module.params['name'].strip()
 
     wxtags = client.get('/api/v1/orgs/{org_id}/wxtags'.format(org_id=org_id))
 

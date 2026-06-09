@@ -21,10 +21,10 @@ class MistApiClient:
 
     def __init__(self, module):
         self.module = module
-        self.api_token = module.params.get("api_token") or self._get_env_token()
+        self.api_token = (module.params.get("api_token") or self._get_env_token() or "").strip()
         self.base_url = (
             module.params.get("base_url") or "https://api.mist.com"
-        ).rstrip("/")
+        ).strip().rstrip("/")
         self.follow_redirects = module.params.get("follow_redirects") or "all"
 
         if not self.api_token:
@@ -79,7 +79,7 @@ class MistApiClient:
                 msg=f"Failed to validate connectivity to {self.base_url}: {str(e)}",
             )
 
-        org_id = self.module.params.get("org_id")
+        org_id = (self.module.params.get("org_id") or "").strip()
         if org_id:
             privileges = data.get("privileges") or []
             accessible_orgs = {

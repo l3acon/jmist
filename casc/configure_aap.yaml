@@ -91,10 +91,15 @@
         state: present
       loop: "{{ controller_user_accounts }}"
 
+    - name: Build job template ID lookup
+      ansible.builtin.set_fact:
+        job_template_ids: "{{ job_template_ids | default({}) | combine({item.item.name: item.id}) }}"
+      loop: "{{ job_template_results.results }}"
+
     - name: Assign execute role to users
       awx.awx.role_user_assignment:
         user: "{{ item.user }}"
         role_definition: "{{ item.role_definition }}"
-        object_id: "{{ job_template_results.results[0].id }}"
+        object_id: "{{ job_template_ids[item.job_template] }}"
         state: present
       loop: "{{ controller_role_user_assignments }}"

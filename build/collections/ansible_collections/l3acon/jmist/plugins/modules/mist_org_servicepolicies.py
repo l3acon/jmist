@@ -216,7 +216,7 @@ def main():
 
     client = MistApiClient(module)
     state = module.params['state']
-    org_id = module.params['org_id']
+    org_id = module.params['org_id'].strip()
     resource_id = module.params.get('servicepolicy_id')
 
     result = dict(changed=False)

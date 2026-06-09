@@ -20,7 +20,7 @@ def mac_to_ap_id(mac):
 
     Mist AP IDs follow the format: 00000000-0000-0000-1000-{mac_without_separators}
     """
-    clean_mac = re.sub(r'[:\-.]', '', mac).lower()
+    clean_mac = re.sub(r'[:\-.]', '', mac.strip()).lower()
     if len(clean_mac) != 12:
         raise AnsibleFilterError(
             "Invalid MAC address: '{mac}' (expected 12 hex characters)".format(mac=mac)
