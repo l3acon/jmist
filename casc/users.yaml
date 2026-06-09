@@ -1,0 +1,13 @@
+---
+controller_user_accounts:
+  - username: mist-operator
+    password: MistOp2026!
+    email: mist-operator@lab.local
+    first_name: Mist
+    last_name: Operator
+    organization: Default
+
+controller_role_user_assignments:
+  - user: mist-operator
+    role_definition: JobTemplate Execute
+    job_template: "Mist - Assign AP to WxTag"

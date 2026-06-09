@@ -1,0 +1,9 @@
+---
+controller_projects:
+  - name: Juniper Mist Collection
+    description: Ansible collection for managing Juniper Mist cloud infrastructure
+    organization: Default
+    scm_type: git
+    scm_url: https://github.com/l3acon/jmist.git
+    scm_branch: master
+    scm_update_on_launch: true

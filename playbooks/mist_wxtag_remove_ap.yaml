@@ -1,0 +1,38 @@
+---
+- name: Remove AP from WxTag label by name
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Convert AP MAC to device ID
+      ansible.builtin.debug:
+        msg: "AP MAC {{ ap_mac }} -> ID {{ ap_mac | l3acon.jmist.mac_to_ap_id }}"
+
+    - name: Look up WxTag by name
+      l3acon.jmist.label_info:
+        api_token: "{{ mist_token }}"
+        base_url: "{{ mist_base_url | default('https://api.mist.com') }}"
+        org_id: "{{ org_id }}"
+        name: "{{ tag_name }}"
+      register: tag
+
+    - name: Show label info
+      ansible.builtin.debug:
+        var: tag.label
+
+    - name: Remove AP device ID from WxTag
+      l3acon.jmist.mist_org_wxtags:
+        api_token: "{{ mist_token }}"
+        base_url: "{{ mist_base_url | default('https://api.mist.com') }}"
+        org_id: "{{ org_id }}"
+        wxtag_id: "{{ tag.label.id }}"
+        state: present
+        values_mode: remove
+        values:
+          - "{{ ap_mac | l3acon.jmist.mac_to_ap_id }}"
+      register: update_result
+
+    - name: Show update result
+      ansible.builtin.debug:
+        var: update_result
