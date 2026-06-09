@@ -25,14 +25,73 @@ class MistApiClient:
         self.base_url = (
             module.params.get("base_url") or "https://api.mist.com"
         ).rstrip("/")
+        self.follow_redirects = module.params.get("follow_redirects") or "all"
 
         if not self.api_token:
             module.fail_json(msg="api_token is required (parameter or MIST_API_TOKEN env var)")
+
+        self._validate_connectivity()
 
     def _get_env_token(self):
         """Try to read the API token from environment."""
         import os
         return os.environ.get("MIST_API_TOKEN")
+
+    def _validate_connectivity(self):
+        url = f"{self.base_url}/api/v1/self"
+        try:
+            response = open_url(
+                url,
+                method="GET",
+                headers=self._headers(),
+                validate_certs=self.module.params.get("validate_certs", True),
+                timeout=self.module.params.get("timeout", 30),
+                follow_redirects=self.follow_redirects,
+            )
+            data = json.loads(response.read())
+        except HTTPError as e:
+            if e.code == 401:
+                self.module.fail_json(
+                    msg=f"Authentication failed against {self.base_url}. "
+                        "Verify your api_token or MIST_API_TOKEN is correct and not expired.",
+                )
+            if e.code == 403:
+                self.module.fail_json(
+                    msg=f"Authorization denied by {self.base_url}. "
+                        "The API token is valid but lacks permission for this operation.",
+                )
+            self.module.fail_json(
+                msg=f"Unexpected HTTP {e.code} from {self.base_url}/api/v1/self. "
+                    "Verify base_url points to the correct Mist API region "
+                    "(e.g. https://api.gc1.mist.com, https://api.gc2.mist.com).",
+            )
+        except URLError as e:
+            self.module.fail_json(
+                msg=f"Cannot reach Mist API at {self.base_url}: {e.reason}. "
+                    "Check that base_url is correct and the host is reachable. "
+                    "Common Mist API regions: https://api.mist.com, "
+                    "https://api.gc1.mist.com, https://api.gc2.mist.com, "
+                    "https://api.gc3.mist.com, https://api.gc4.mist.com, "
+                    "https://api.ac2.mist.com, https://api.ac99.mist.com",
+            )
+        except Exception as e:
+            self.module.fail_json(
+                msg=f"Failed to validate connectivity to {self.base_url}: {str(e)}",
+            )
+
+        org_id = self.module.params.get("org_id")
+        if org_id:
+            privileges = data.get("privileges") or []
+            accessible_orgs = {
+                p.get("org_id") for p in privileges
+                if p.get("scope") in ("org", "site") and p.get("org_id")
+            }
+            if org_id not in accessible_orgs:
+                self.module.fail_json(
+                    msg=f"Organization '{org_id}' is not accessible with this API token. "
+                        "Verify the org_id is correct and the token has been granted access. "
+                        f"Accessible orgs: {', '.join(sorted(accessible_orgs)) or 'none'}",
+                )
 
     def _headers(self):
         return {
@@ -54,6 +113,7 @@ class MistApiClient:
                 data=body,
                 validate_certs=self.module.params.get("validate_certs", True),
                 timeout=self.module.params.get("timeout", 30),
+                follow_redirects=self.follow_redirects,
             )
             response_body = response.read()
             if response_body:
@@ -72,7 +132,8 @@ class MistApiClient:
             )
         except URLError as e:
             self.module.fail_json(
-                msg=f"Failed to connect to Mist API: {e.reason}",
+                msg=f"Failed to connect to Mist API at {self.base_url}: {e.reason}. "
+                    "Check that base_url is correct and the host is reachable.",
                 url=url,
             )
         except Exception as e:

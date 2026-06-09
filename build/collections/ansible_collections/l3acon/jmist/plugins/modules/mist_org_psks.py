@@ -214,6 +214,7 @@ def main():
         base_url=dict(type='str', default='https://api.mist.com'),
         validate_certs=dict(type='bool', default=True),
         timeout=dict(type='int', default=30),
+        follow_redirects=dict(type='str', choices=['all', 'no', 'safe', 'urllib2'], default='all'),
         org_id=dict(type='str', required=True),
         psk_id=dict(type='str'),
         state=dict(type='str', choices=["absent", "gathered", "present"], default='present'),
