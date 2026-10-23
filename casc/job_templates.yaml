@@ -1,7 +1,7 @@
 ---
 controller_templates:
   - name: "Mist - Assign AP to WxTag"
-    description: Assign an access point to a WxTag label by AP MAC address and tag name
+    description: Assign one or more access points to a WxTag label by AP MAC addresses and tag name
     organization: Default
     project: Juniper Mist Collection
     playbook: playbooks/mist_wxtag_assign_ap.yaml
@@ -13,14 +13,15 @@ controller_templates:
       name: ""
       description: ""
       spec:
-        - question_name: AP MAC Address
-          question_description: "MAC address of the AP to assign (e.g. a8:53:7d:89:7e:7d)"
+        - question_name: AP MAC Addresses
+          question_description: "MAC addresses of the APs to assign, one per line or separated by commas or spaces (e.g. a8:53:7d:89:7e:7d)"
           required: true
-          type: text
-          variable: ap_mac
+          type: textarea
+          variable: ap_macs
+          max: 65536
           default: ""
         - question_name: Tag Name
-          question_description: "WxTag label to assign the AP to"
+          question_description: "WxTag label to assign all listed APs to"
           required: true
           type: multiplechoice
           variable: tag_name
@@ -31,7 +32,7 @@ controller_templates:
           default: ""
 
   - name: "Mist - Remove AP from WxTag"
-    description: Remove an access point from a WxTag label by AP MAC address and tag name
+    description: Remove one or more access points from a WxTag label by AP MAC addresses and tag name
     organization: Default
     project: Juniper Mist Collection
     playbook: playbooks/mist_wxtag_remove_ap.yaml
@@ -43,14 +44,15 @@ controller_templates:
       name: ""
       description: ""
       spec:
-        - question_name: AP MAC Address
-          question_description: "MAC address of the AP to remove (e.g. a8:53:7d:89:7e:7d)"
+        - question_name: AP MAC Addresses
+          question_description: "MAC addresses of the APs to remove, one per line or separated by commas or spaces (e.g. a8:53:7d:89:7e:7d)"
           required: true
-          type: text
-          variable: ap_mac
+          type: textarea
+          variable: ap_macs
+          max: 65536
           default: ""
         - question_name: Tag Name
-          question_description: "WxTag label to remove the AP from"
+          question_description: "WxTag label to remove all listed APs from"
           required: true
           type: multiplechoice
           variable: tag_name

@@ -1,0 +1,116 @@
+---
+- name: Create Juniper Mist credential type
+  awx.awx.credential_type:
+    name: "{{ item.name }}"
+    description: "{{ item.description }}"
+    kind: "{{ item.kind }}"
+    inputs: "{{ item.inputs }}"
+    injectors: "{{ item.injectors }}"
+    state: present
+  loop: "{{ controller_credential_types }}"
+
+- name: Create project
+  awx.awx.project:
+    name: "{{ item.name }}"
+    description: "{{ item.description }}"
+    organization: "{{ item.organization }}"
+    scm_type: "{{ item.scm_type }}"
+    scm_url: "{{ item.scm_url }}"
+    scm_branch: "{{ item.scm_branch }}"
+    scm_update_on_launch: "{{ item.scm_update_on_launch }}"
+    state: present
+    wait: true
+  loop: "{{ controller_projects }}"
+
+- name: Create inventory
+  awx.awx.inventory:
+    name: "{{ item.name }}"
+    description: "{{ item.description }}"
+    organization: "{{ item.organization }}"
+    state: present
+  loop: "{{ controller_inventories }}"
+
+- name: Create host in inventory
+  awx.awx.host:
+    name: "{{ item.name }}"
+    inventory: "{{ item.inventory }}"
+    variables: "{{ item.variables }}"
+    state: present
+  loop: "{{ controller_hosts }}"
+
+- name: Create Mist API credential
+  awx.awx.credential:
+    name: "{{ item.name }}"
+    description: "{{ item.description }}"
+    organization: "{{ item.organization }}"
+    credential_type: "{{ item.credential_type }}"
+    inputs: "{{ item.inputs }}"
+    state: present
+  loop: "{{ controller_credentials }}"
+  no_log: true
+
+- name: Create job template
+  awx.awx.job_template:
+    name: "{{ item.name }}"
+    description: "{{ item.description }}"
+    organization: "{{ item.organization }}"
+    project: "{{ item.project }}"
+    playbook: "{{ item.playbook }}"
+    inventory: "{{ item.inventory }}"
+    credentials: "{{ item.credentials }}"
+    survey_enabled: "{{ item.survey_enabled }}"
+    survey_spec: "{{ item.survey_spec }}"
+    ask_job_type_on_launch: true
+    state: present
+  loop: "{{ controller_templates }}"
+  register: job_template_results
+
+- name: Create users
+  awx.awx.user:
+    username: "{{ item.username }}"
+    password: "{{ item.password }}"
+    email: "{{ item.email }}"
+    first_name: "{{ item.first_name }}"
+    last_name: "{{ item.last_name }}"
+    update_secrets: true
+    state: present
+  loop: "{{ controller_user_accounts }}"
+  no_log: true
+
+- name: Find operator accounts in the AAP gateway
+  ansible.builtin.uri:
+    url: "{{ lookup('ansible.builtin.env', 'AAP_HOSTNAME') | regex_replace('/$', '') }}/api/gateway/v1/users/?username={{ item.username | urlencode }}"
+    headers:
+      Authorization: "Bearer {{ aap_oauth_token }}"
+    validate_certs: false
+  loop: "{{ controller_user_accounts }}"
+  register: gateway_operator_users
+  no_log: true
+
+- name: Set operator passwords in the AAP gateway
+  ansible.builtin.uri:
+    url: "{{ lookup('ansible.builtin.env', 'AAP_HOSTNAME') | regex_replace('/$', '') }}/api/gateway/v1/users/{{ item.json.results[0].id }}/"
+    method: PATCH
+    headers:
+      Authorization: "Bearer {{ aap_oauth_token }}"
+    validate_certs: false
+    body_format: json
+    body:
+      password: "{{ item.item.password }}"
+  loop: "{{ gateway_operator_users.results }}"
+  no_log: true
+
+- name: Build job template ID lookup
+  ansible.builtin.set_fact:
+    job_template_ids: "{{ job_template_ids | default({}) | combine({item.item.name: item.id}) }}"
+  loop: "{{ job_template_results.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+
+- name: Assign execute role to users
+  awx.awx.role_user_assignment:
+    user: "{{ item.user }}"
+    role_definition: "{{ item.role_definition }}"
+    object_id: "{{ job_template_ids[item.job_template] }}"
+    state: present
+  loop: "{{ controller_role_user_assignments }}"

@@ -32,10 +32,40 @@ def mac_to_ap_id(mac):
     return "00000000-0000-0000-1000-{mac}".format(mac=clean_mac)
 
 
+def macs_to_ap_ids(macs):
+    """Validate a batch of MACs and return unique AP IDs in input order.
+
+    Accept a YAML list or text separated by commas or whitespace (including
+    newlines), as provided by an Automation Controller textarea survey.
+    """
+    if isinstance(macs, str):
+        macs = [mac for mac in re.split(r'[\s,]+', macs.strip()) if mac]
+    if not isinstance(macs, (list, tuple)) or not macs:
+        raise AnsibleFilterError(
+            "ap_macs must contain at least one MAC address, as a list or "
+            "text separated by commas, spaces, or newlines"
+        )
+
+    ap_ids = []
+    for index, mac in enumerate(macs, start=1):
+        if not isinstance(mac, str):
+            raise AnsibleFilterError(
+                "Invalid MAC address at position {0}: expected a string".format(index)
+            )
+        try:
+            ap_ids.append(mac_to_ap_id(mac))
+        except AnsibleFilterError as error:
+            raise AnsibleFilterError(
+                "Invalid MAC address at position {0}: {1}".format(index, error)
+            ) from error
+    return list(dict.fromkeys(ap_ids))
+
+
 class FilterModule(object):
     """Mist filter plugins."""
 
     def filters(self):
         return {
             'mac_to_ap_id': mac_to_ap_id,
+            'macs_to_ap_ids': macs_to_ap_ids,
         }

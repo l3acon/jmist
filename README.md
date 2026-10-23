@@ -52,6 +52,74 @@ Modules accept credentials via:
 | EMEA 01 | `https://api.eu.mist.com` |
 | APAC 01 | `https://api.ac5.mist.com` |
 
+## Deploying to Ansible Automation Platform
+
+Add `AAP_HOSTNAME` (the full HTTPS URL) and either `AAP_OAUTH_TOKEN` or
+`AAP_USERNAME` and `AAP_PASSWORD` to `.env`, alongside the Mist settings above.
+The account needs permission to create credential types, projects, inventories,
+credentials, templates, users, and role assignments.
+
+```bash
+ansible-galaxy collection install -r casc/requirements.yml \
+  --server https://galaxy.ansible.com -p ./build/collections
+set -a
+source .env
+set +a
+ansible-playbook -i localhost, casc/configure_aap.yaml
+```
+
+The deployment uses the AAP gateway and controller APIs. When no valid OAuth
+token is supplied, it creates a temporary gateway token using the supplied
+username/password and revokes it when the deployment finishes. The current lab
+configuration disables AAP certificate validation.
+
+This creates the `Juniper Mist Collection` project from GitHub's `master` branch,
+the `Localhost` inventory, a `Juniper Mist API` credential type, the `Mist API - Lab`
+credential populated from `.env`, and these survey-driven job templates:
+
+- `Mist - Assign AP to WxTag`
+- `Mist - Remove AP from WxTag`
+
+It also provisions the operator account and execute permissions defined in
+`casc/users.yaml`. Review that file before deploying to another environment.
+The operator password is applied to both the controller and the AAP gateway.
+
+Launch either template with one or more AP MAC addresses and a label name.
+Paste MAC addresses into **AP MAC Addresses**, one per line or separated by
+commas or spaces. All devices in the job use the selected label. Assign merges
+the devices into the label; Remove removes only the listed devices and leaves
+the other devices on the label. These jobs manage label membership for
+installations/decommissioning; they do not claim or delete devices in Mist.
+
+The entire batch is validated before any Mist API calls, and duplicate MACs
+are handled once. Colon, hyphen, dotted, and unseparated MAC formats are
+supported. Choose the `Check` job type to verify API connectivity and preview
+the operation without changing Mist. The label choices are configured in
+`casc/job_templates.yaml`. Re-run the deployment playbook after deploying these
+changes to update the existing template surveys.
+
+For CLI or API launches, pass `ap_macs` as text or a YAML/JSON list, for example
+in `devices.yaml`:
+
+```yaml
+ap_macs:
+  - "a8:53:7d:89:7e:7d"
+  - "d4:dc:09:2a:7b:4d"
+tag_name: matt-label1
+```
+
+```bash
+# With Mist credentials supplied as playbook variables or an AAP credential
+ansible-playbook playbooks/mist_wxtag_assign_ap.yaml -e @devices.yaml --check
+ansible-playbook playbooks/mist_wxtag_remove_ap.yaml -e @devices.yaml --check
+```
+
+The legacy single-device `ap_mac` variable is still supported when `ap_macs`
+is omitted. When both are supplied, `ap_macs` takes precedence.
+
+Mist secrets are stored in the AAP credential and injected into jobs; `.env`
+stays local and is not part of the GitHub project.
+
 ## Project Structure
 
 ```
@@ -190,6 +258,16 @@ All resource modules follow the same pattern with `state: present|absent|gathere
 | `lookup_label_id_by_name` | Find a WxTag ID by its name |
 
 ## Testing
+
+### Offline Demo Tests
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+These run the demo playbooks against a local fake Mist API to check batch
+assignment/removal, validation, duplicate handling, idempotency, and check mode.
+They do not require Mist credentials or change real devices.
 
 ### Running Test Playbooks
 
